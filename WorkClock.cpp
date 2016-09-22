@@ -13,10 +13,12 @@
 
 #define MAX_LOADSTRING 100
 #define IDC_BUTTON_1 110
+#define IDC_BUTTON_2 111
 
 struct Data
 {
 	HWND hWnd;
+	int count;
 };
 
 void onCommand(HWND hWnd, int id, HWND hwndCtl, UINT codeNotify);
@@ -24,7 +26,8 @@ void onPaint(HWND hWnd);
 void onDestroy(HWND hWnd);
 BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct);
 void stopWatch(int sec, HWND hWnd);
-DWORD WINAPI myThread(__in LPVOID lpParameter);
+DWORD WINAPI workThread(__in LPVOID lpParameter);
+DWORD WINAPI breakThread(__in LPVOID lpParameter);
 
 // Global Variables:
 HINSTANCE hInst;								// current instance
@@ -181,12 +184,14 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 	return (INT_PTR)FALSE;
 }
 
-HWND Watch, Button;
+//Global varibles
+HWND Watch, Button1, Remind, Button2;
+Data *data = new Data;
 
 BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
 	INITCOMMONCONTROLSEX icc;
-	icc.dwSize = sizeof(icc);
+	icc.dwSize = sizeof(icc);;
 	icc.dwICC = ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&icc);
 
@@ -199,28 +204,31 @@ BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 		lf.lfOutPrecision, lf.lfClipPrecision, lf.lfQuality,
 		lf.lfPitchAndFamily, lf.lfFaceName);
 
-	//Create thread
-	std::thread thread1;
-
 	//Create boxes
-	Watch = CreateWindowEx(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_CENTER | WS_BORDER, 100, 100, 100, 40, hWnd, NULL, hInst, NULL);
+	Watch = CreateWindowEx(0, L"STATIC", L"", WS_CHILD | WS_VISIBLE | SS_CENTER | SS_CENTERIMAGE | WS_BORDER, 100, 100, 100, 40, hWnd, NULL, hInst, NULL);
 	SendMessage(Watch, WM_SETFONT, WPARAM(hFont), TRUE);
 	
-	Button = CreateWindowEx(0, L"BUTTON", L"Start", WS_CHILD | WS_VISIBLE, 100, 150, 100, 40, hWnd, (HMENU)IDC_BUTTON_1, hInst, NULL);
-	SendMessage(Button, WM_SETFONT, WPARAM(hFont), TRUE);
+	Button1 = CreateWindowEx(0, L"BUTTON", L"Start", WS_CHILD | WS_VISIBLE, 100, 150, 100, 40, hWnd, (HMENU)IDC_BUTTON_1, hInst, NULL);
+	SendMessage(Button1, WM_SETFONT, WPARAM(hFont), TRUE);
+
+	Button2 = CreateWindowEx(0, L"BUTTON", L"Begin Break", WS_CHILD | WS_VISIBLE | WS_DISABLED, 100, 200, 100, 40, hWnd, (HMENU)IDC_BUTTON_2, hInst, NULL);
+	SendMessage(Button2, WM_SETFONT, WPARAM(hFont), TRUE);
+
+	Remind = CreateWindowEx(0, L"STATIC", L"Hello", WS_CHILD | WS_VISIBLE | SS_CENTERIMAGE | WS_BORDER | SS_CENTER, 220, 100, 200, 40, hWnd, NULL, hInst, NULL);
+	SendMessage(Remind, WM_SETFONT, WPARAM(hFont), TRUE);
+
+	data->hWnd = hWnd;
+	data->count = 0;
 
 	return true;
 }
 
+
 void onCommand(HWND hWnd, int id, HWND hwndCtl, UINT codeNotify)
 {
-	WCHAR* buff1 = NULL;
-	WCHAR* buff2 = NULL;
-	WCHAR* buffKQ = NULL;
-
-	int size1, size2, sizeKQ;
-
-	double money, rate, result;
+	DWORD myThreadID;
+	HANDLE myHandle;
+	
 
 	switch (id)
 	{
@@ -233,11 +241,12 @@ void onCommand(HWND hWnd, int id, HWND hwndCtl, UINT codeNotify)
 		break;
 
 	case IDC_BUTTON_1:
-		DWORD myThreadID;
-		HANDLE myHandle;
-		/*Data *tData = new Data;
-		tData->hWnd = hWnd;*/
-		myHandle = CreateThread(0, 0, myThread, (LPVOID)hWnd, 0, &myThreadID);
+		data->count += 1;
+		myHandle = CreateThread(0, 0, workThread, (LPVOID)data, 0, &myThreadID);
+		break;
+
+	case IDC_BUTTON_2:
+		myHandle = CreateThread(0, 0, breakThread, (LPVOID)data, 0, &myThreadID);
 		break;
 	}
 }
@@ -256,53 +265,97 @@ void onDestroy(HWND hWnd)
 	PostQuitMessage(0);
 }
 
-void stopWatch(int sec, HWND hWnd)
+void stopWatch(int SEC, HWND hWnd)
 {
 	WCHAR *time = new WCHAR[10];
-	swprintf(time, 10, L"%d", sec);
+	int sec, min;
+	//Seperate total seconds into minutes and seconds
+	sec = SEC % 60;
+	min = SEC / 60;
+
+	//stop watch and display remain time
+	swprintf(time, 10, L"%d:%d",min, sec);
 	SetWindowText(Watch, time);
 	UpdateWindow(hWnd);
 	clock_t t1, t2;
-	t1 = clock() / CLOCKS_PER_SEC;
-	//t2 = t1 + 1;
-	for (int i = sec; i > 0;)
+
+	for (int i = min; i >= 0;) //loop for min
 	{
-		t2 = t1 + 1;
-		while (t1 < t2)
+		for (int j = sec; j > 0;) //loop for sec
 		{
 			t1 = clock() / CLOCKS_PER_SEC;
+			t2 = t1 + 1;
+			while (t1 < t2) // loop end after 1 second
+			{
+				t1 = clock() / CLOCKS_PER_SEC;
+			}
+			j--;
+			swprintf(time, 10, L"%d:%d", i, j);
+			SetWindowText(Watch, time);
+			UpdateWindow(hWnd);
 		}
 		i--;
-		swprintf(time, 10, L"%d", i);
-		SetWindowText(Watch, time);
-		UpdateWindow(hWnd);
+		sec = 60;
 	}
 }
 
-DWORD WINAPI myThread(__in LPVOID lpParameter)
+DWORD WINAPI workThread(__in LPVOID lpParameter)
 {
-	EnableWindow(Button, false);
-	//Data *tData = (struct Data*)lpParameter;
-	HWND hWnd = (HWND)lpParameter;
-	stopWatch(5, hWnd);
-	/*WCHAR *time = new WCHAR[10];
-	swprintf(time, 10, L"%d", tData->sec);
-	SetWindowText(Watch, time);
-	UpdateWindow(tData->hWnd);
-	clock_t t1, t2;
-	t1 = clock() / CLOCKS_PER_SEC;
-	for (int i = tData->sec; i > 0;)
+	EnableWindow(Button1, false);
+
+	Data *data = (Data*)lpParameter;
+	
+	if (data->count == 1)
 	{
-		t2 = t1 + 1;
-		while (t1 < t2)
-		{
-			t1 = clock() / CLOCKS_PER_SEC;
-		}
-		i--;
-		swprintf(time, 10, L"%d", i);
-		SetWindowText(Watch, time);
-		UpdateWindow(tData->hWnd);
-	}*/
-	EnableWindow(Button, true);
+		SetWindowText(Remind, L"Ponodoro 1 - Working time");
+		stopWatch(5, data->hWnd);
+		EnableWindow(Button1, true);
+	}
+
+	if (data->count == 2)
+	{
+		SetWindowText(Remind, L"Ponodoro 2 - Working time");
+		stopWatch(5, data->hWnd);
+		EnableWindow(Button2, true);
+	}
+
+	if (data->count == 3)
+	{
+		SetWindowText(Remind, L"Ponodoro 3 - Working time");
+		stopWatch(5, data->hWnd);
+		EnableWindow(Button1, true);
+	}
+
+	if (data->count == 4)
+	{
+		SetWindowText(Remind, L"Ponodoro 4 - Working time");
+		stopWatch(5, data->hWnd);
+		EnableWindow(Button2, true);
+	}
+
+	return 0;
+}
+
+DWORD WINAPI breakThread(__in LPVOID lpParameter)
+{
+	EnableWindow(Button2, false);
+
+	Data *data = (Data*)lpParameter;
+
+	if (data->count == 2)
+	{
+		SetWindowText(Remind, L"Short break");
+		stopWatch(3, data->hWnd);
+		EnableWindow(Button1, true);
+	}
+
+	if (data->count == 4)
+	{
+		SetWindowText(Remind, L"Long break");
+		stopWatch(8, data->hWnd);
+		EnableWindow(Button1, true);
+		data->count = 0;
+	}
+
 	return 0;
 }
