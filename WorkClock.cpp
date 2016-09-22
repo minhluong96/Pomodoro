@@ -191,7 +191,7 @@ Data *data = new Data;
 BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
 	INITCOMMONCONTROLSEX icc;
-	icc.dwSize = sizeof(icc);;
+	icc.dwSize = sizeof(icc);
 	icc.dwICC = ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&icc);
 
