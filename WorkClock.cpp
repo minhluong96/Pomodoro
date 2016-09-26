@@ -12,8 +12,6 @@
 #pragma comment(lib, "ComCtl32.lib")
 
 #define MAX_LOADSTRING 100
-#define IDC_BUTTON_1 110
-#define IDC_BUTTON_2 111
 
 struct Data
 {
@@ -191,7 +189,7 @@ Data *data = new Data;
 BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
 	INITCOMMONCONTROLSEX icc;
-	icc.dwSize = sizeof(icc);
+	icc.dwSize = sizeof(icc);;
 	icc.dwICC = ICC_WIN95_CLASSES;
 	InitCommonControlsEx(&icc);
 
@@ -276,7 +274,6 @@ void stopWatch(int SEC, HWND hWnd)
 	//stop watch and display remain time
 	swprintf(time, 10, L"%d:%d",min, sec);
 	SetWindowText(Watch, time);
-	UpdateWindow(hWnd);
 	clock_t t1, t2;
 
 	for (int i = min; i >= 0;) //loop for min
@@ -292,7 +289,6 @@ void stopWatch(int SEC, HWND hWnd)
 			j--;
 			swprintf(time, 10, L"%d:%d", i, j);
 			SetWindowText(Watch, time);
-			UpdateWindow(hWnd);
 		}
 		i--;
 		sec = 60;
@@ -308,28 +304,28 @@ DWORD WINAPI workThread(__in LPVOID lpParameter)
 	if (data->count == 1)
 	{
 		SetWindowText(Remind, L"Ponodoro 1 - Working time");
-		stopWatch(5, data->hWnd);
+		stopWatch(1500, data->hWnd);
 		EnableWindow(Button1, true);
 	}
 
 	if (data->count == 2)
 	{
 		SetWindowText(Remind, L"Ponodoro 2 - Working time");
-		stopWatch(5, data->hWnd);
+		stopWatch(1500, data->hWnd);
 		EnableWindow(Button2, true);
 	}
 
 	if (data->count == 3)
 	{
 		SetWindowText(Remind, L"Ponodoro 3 - Working time");
-		stopWatch(5, data->hWnd);
+		stopWatch(1500, data->hWnd);
 		EnableWindow(Button1, true);
 	}
 
 	if (data->count == 4)
 	{
 		SetWindowText(Remind, L"Ponodoro 4 - Working time");
-		stopWatch(5, data->hWnd);
+		stopWatch(1500, data->hWnd);
 		EnableWindow(Button2, true);
 	}
 
@@ -345,14 +341,14 @@ DWORD WINAPI breakThread(__in LPVOID lpParameter)
 	if (data->count == 2)
 	{
 		SetWindowText(Remind, L"Short break");
-		stopWatch(3, data->hWnd);
+		stopWatch(180, data->hWnd);
 		EnableWindow(Button1, true);
 	}
 
 	if (data->count == 4)
 	{
 		SetWindowText(Remind, L"Long break");
-		stopWatch(8, data->hWnd);
+		stopWatch(1800, data->hWnd);
 		EnableWindow(Button1, true);
 		data->count = 0;
 	}
