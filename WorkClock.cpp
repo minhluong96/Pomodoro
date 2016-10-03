@@ -188,6 +188,8 @@ Data *data = new Data;
 
 BOOL onCreate(HWND hWnd, LPCREATESTRUCT lpCreateStruct)
 {
+	LoadRect(hWnd);
+
 	INITCOMMONCONTROLSEX icc;
 	icc.dwSize = sizeof(icc);;
 	icc.dwICC = ICC_WIN95_CLASSES;
@@ -256,6 +258,7 @@ void onPaint(HWND hWnd)
 	hdc = BeginPaint(hWnd, &ps);
 	// TODO: Add any drawing code here...
 	EndPaint(hWnd, &ps);
+	SaveRect(hWnd);
 }
 
 void onDestroy(HWND hWnd)
